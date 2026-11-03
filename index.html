@@ -1,0 +1,69 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>سماء القيم</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--g:#ffd45c;--m:#b9b4e6;box-sizing:border-box}*{box-sizing:border-box}
+body{margin:0;font-family:Cairo,Tahoma,sans-serif;font-size:18px;color:#f4f1ff;background:radial-gradient(ellipse at 30% 0,#4a2f9a,transparent 55%),linear-gradient(#0b1240,#17104d 70%,#2a1f6b) fixed;min-height:100vh}
+main{max-width:960px;margin:auto;padding:14px}h1{font-size:2.3rem;margin:.1em 0;color:var(--g);text-shadow:0 0 18px #ffd45c88}.sub{color:var(--m)}
+.card{background:#ffffff12;border:1px solid #ffffff26;border-radius:18px;padding:14px;margin:10px 0}.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,input,select,textarea{font:inherit;color:inherit}button{background:#ffffff1c;border:1px solid #ffffff33;border-radius:14px;padding:10px 16px;min-height:46px;cursor:pointer}
+button.g{background:linear-gradient(#ffe27a,#f3b72f);color:#2a1f6b;font-weight:900;border:0}button.on{background:var(--g);color:#2a1f6b}button:disabled{opacity:.5}
+input,select,textarea{width:100%;background:#0b1240aa;border:1px solid #ffffff33;border-radius:12px;padding:10px;margin:4px 0}textarea{min-height:100px}
+.chip{background:#ffd45c22;border-radius:20px;padding:2px 12px;color:var(--g);font-size:.85em}.pt{cursor:pointer}.pt.lit{animation:pop .8s}@keyframes pop{0%{transform:scale(.2)}}
+#mod{display:none;position:fixed;inset:0;background:#000a;z-index:9;overflow:auto;padding:14px}#mod.on{display:block}#mod .card{max-width:560px;margin:5vh auto;background:#1b1560}
+.done{font-size:1.6rem;text-align:center;color:var(--g);font-weight:900;text-shadow:0 0 20px var(--g)}.pb{height:12px;background:#ffffff22;border-radius:9px;overflow:hidden}.pb b{display:block;height:100%;background:linear-gradient(90deg,#f3b72f,#ffe27a)}
+.warn{background:#ffb34733;border:1px solid #ffb347;border-radius:12px;padding:8px 12px;font-size:.9em}
+</style></head><body><main><h1>سماء القيم</h1><p class="sub">كل موقف جميل… نجمة في سمائنا</p><span class="chip" id="sch"></span>
+<div class="row" id="tabs"></div><div id="app"></div><p class="sub" style="text-align:center;margin-top:24px">بإشراف المعلمة: سناء سندي</p></main><div id="mod"></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const CFG={apiKey:"AIzaSyA3QRs9fy8ER40GtHrd0TGftQ7m0DxKfwc",authDomain:"sama-alqiyam.firebaseapp.com",projectId:"sama-alqiyam",appId:"1:582840417111:web:c1bf13e0ff9f65a9419c12"};
+const $=s=>document.querySelector(s),ar=n=>Number(n).toLocaleString('ar-EG'),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+firebase.initializeApp(CFG);const fs=firebase.firestore(),au=firebase.auth();
+const DEF={goal:60,school:'الثانوية الثامنة والستون – مسارات – جدة',values:['الصدق','الأمانة','التعاون','الاحترام','النظافة','مساعدة الآخرين','المبادرة','المسؤولية','الرفق','التسامح','الانضباط','الشكر والتقدير']};
+const S={cfg:{...DEF},stars:{},posts:{},T:false,tab:'board',fg:'',fv:'',mine:{}};let cur={},busy=false;
+const SL={pending:'بانتظار المراجعة',needs:'يحتاج توضيحًا',approved:'معتمد',rejected:'لم يُعتمد'};
+const stars=()=>Object.entries(S.stars).sort((a,b)=>a[1].at-b[1].at);
+function pts(g){const nc=Math.round(g*5/6),P=[];for(let i=0;i<nc;i++){const f=(-130+260*i/Math.max(nc-1,1))*Math.PI/180;P.push([200-108*Math.cos(f),170+108*Math.sin(f)])}
+ const V=[];for(let k=0;k<10;k++){const a=(-90+36*k)*Math.PI/180,r=k%2?17:40;V.push([222+r*Math.cos(a),170+r*Math.sin(a)])}V.push(V[0]);const L=[0];for(let k=1;k<11;k++)L.push(L[k-1]+Math.hypot(V[k][0]-V[k-1][0],V[k][1]-V[k-1][1]));
+ for(let i=0;i<g-nc;i++){const d=L[10]*i/(g-nc);let k=1;while(L[k]<d)k++;const t=(d-L[k-1])/(L[k]-L[k-1]);P.push([V[k-1][0]+t*(V[k][0]-V[k-1][0]),V[k-1][1]+t*(V[k][1]-V[k-1][1])])}return P}
+const sp=(x,y,s)=>`M${x} ${y-s}Q${x} ${y} ${x+s} ${y}Q${x} ${y} ${x} ${y+s}Q${x} ${y} ${x-s} ${y}Q${x} ${y} ${x} ${y-s}Z`;
+function board(){const g=S.cfg.goal,n=Math.min(stars().length,g),P=pts(g),done=n>=g;
+ return`<div class="card"><svg viewBox="0 0 400 340" style="width:100%;max-height:70vh"><defs><filter id="gl" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="${done?5:3}"/></filter><radialGradient id="bg"><stop offset="0" stop-color="#3a2a8a"/><stop offset="1" stop-color="#0d1245"/></radialGradient></defs><rect width="400" height="340" rx="22" fill="url(#bg)"/>
+${P.map(([x,y],i)=>{const l=i<n;return`<g class="pt${l?' lit':''}" data-a="pt" data-i="${i}">${l?`<path d="${sp(x,y,12)}" fill="#ffd45c" filter="url(#gl)"/>`:''}<path d="${sp(x,y,l?8:5)}" fill="${l?'#fff3b8':'#8d86c9'}" fill-opacity="${l?1:.45}"/><circle cx="${x}" cy="${y}" r="17" fill="transparent"/></g>`}).join('')}</svg>
+<b style="font-size:1.5rem;color:var(--g)">${ar(n)} من ${ar(g)} نجمة</b><div class="pb"><b style="width:${100*n/g}%"></b></div>${done?'<p class="done">✨ بقيمنا أضأنا سماءنا ✨</p>':''}</div>`}
+function wall(){const L=Object.values(S.stars).filter(r=>r.pub&&(!S.fg||r.grade===S.fg)&&(!S.fv||r.value===S.fv)).sort((a,b)=>b.at-a.at),gr=[...new Set(Object.values(S.stars).map(r=>r.grade).filter(Boolean))];
+ return`<h2>مواقف تلهمنا</h2><p class="sub">نشارك الخير… لنلهم غيرنا ونضيء سماءنا</p><div class="row"><select style="flex:1" data-c="fg"><option value="">كل الصفوف</option>${gr.map(x=>`<option${x===S.fg?' selected':''}>${esc(x)}</option>`).join('')}</select><select style="flex:1" data-c="fv"><option value="">كل القيم</option>${S.cfg.values.map(x=>`<option${x===S.fv?' selected':''}>${esc(x)}</option>`).join('')}</select></div>`+(L.map(r=>`<div class="card"><b>${esc(r.name)}</b> · ${esc(r.grade)} <span class="chip">${esc(r.value)}</span><p>${esc(r.text)}</p></div>`).join('')||'<p class="sub">لا توجد مواقف منشورة بعد.</p>')}
+function mine(){const ids=JSON.parse(localStorage.mine||'[]');return`<button class="g" style="width:100%;font-size:1.2rem" data-a="new">⭐ سجّلي موقفكِ الجميل</button><h2>مشاركاتي (على هذا الجهاز)</h2>`+(ids.slice().reverse().map(id=>{const p=S.mine[id];return p?`<div class="card"><span class="chip">${esc(p.value)}</span> <b>${SL[p.status]||''}</b><p>${esc(p.text)}</p>${p.status==='needs'?`<div class="warn">ملاحظة المعلمة: ${esc(p.note||'')}</div>`:''}</div>`:''}).join('')||'<p class="sub">لم ترسلي مواقف من هذا الجهاز بعد.</p>')}
+function formModal(){cur={v:''};mod(`<h3>سجّلي موقفكِ الجميل</h3><input id="fn" placeholder="اسمكِ" maxlength="60"><input id="fg" placeholder="صفكِ (مثال: ٢/٤)" maxlength="30"><p>اختاري القيمة:</p><div class="row" id="vals">${S.cfg.values.map(v=>`<button data-a="val" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div><p>احكي موقفكِ الجميل… كيف طبّقتِ هذه القيمة؟</p><textarea id="tx" maxlength="600"></textarea><div class="warn">اكتبي موقفكِ دون ذكر أسرار أو تفاصيل شخصية عن الآخرين</div><div class="row" style="margin-top:10px"><button class="g" data-a="send">أرسلي موقفكِ ✨</button><button data-a="close">إلغاء</button></div>`)}
+function review(){const L=Object.entries(S.posts),pend=L.filter(([,p])=>p.status==='pending'),ok=stars();
+ return`<h2>المواقف الواردة (${ar(pend.length)})</h2>`+(pend.map(([id,p])=>`<div class="card"><b>${esc(p.name)}</b> · ${esc(p.grade)} <span class="chip">${esc(p.value)}</span><p>${esc(p.text)}</p><button class="g" data-a="rv" data-p="${id}">مراجعة</button></div>`).join('')||'<p class="sub">لا مواقف بانتظار المراجعة.</p>')+`<h2>النجوم المعتمدة</h2>`+ok.map(([id,r])=>`<div class="card"><span class="chip">${esc(r.value)}</span> ${r.pub?'منشور: '+esc(r.name):'خاص'}<p>${esc(r.text)}</p><div class="row"><button data-a="undo" data-p="${id}">↩ تراجع</button>${r.pub?`<button data-a="hide" data-p="${id}">إخفاء التفاصيل</button>`:`<button data-a="pubit" data-p="${id}">نشر التفاصيل</button>`}</div></div>`).join('')}
+function settings(){return`<h2>الإعدادات</h2><div class="card"><label>اسم المدرسة<input id="sn" value="${esc(S.cfg.school)}"></label><label>الهدف (عدد النجوم)<input id="sg" type="number" min="6" max="300" value="${S.cfg.goal}"></label><label>القيم (بفاصلة)<textarea id="sv">${esc(S.cfg.values.join('، '))}</textarea></label><button class="g" data-a="saveset">حفظ</button></div><button data-a="out">تسجيل خروج المعلمة</button>`}
+function R(){const t=S.T,tabs=t?[['board','اللوحة'],['review','مراجعة'],['wall','مواقف تلهمنا'],['set','الإعدادات']]:[['board','اللوحة'],['mine','مشاركاتي'],['wall','مواقف تلهمنا']];
+ $('#sch').textContent=S.cfg.school;$('#tabs').innerHTML=tabs.map(([k,n])=>`<button class="${S.tab===k?'on':''}" data-a="tab" data-t="${k}">${n}</button>`).join('');
+ let h=S.tab==='login'?login():S.tab==='board'?board():{review,wall,set:settings,mine}[S.tab]();$('#app').innerHTML=h}
+const login=()=>`<div class="card"><h3>دخول المعلمة</h3><input id="em" type="email" placeholder="البريد"><input id="pw" type="password" placeholder="كلمة المرور"><button class="g" data-a="login">دخول</button></div>`;
+const mod=h=>{$('#mod').innerHTML=`<div class="card">${h}</div>`;$('#mod').className='on'},cl=()=>{$('#mod').className=''};
+const guard=async f=>{if(busy)return;busy=true;try{await f()}catch(e){alert('تعذر التنفيذ: '+(e.message||e.code))}busy=false};
+const A={close:cl,tab:d=>{S.tab=d.t;R()},new:formModal,
+ val:d=>{cur.v=d.v;document.querySelectorAll('#vals button').forEach(b=>b.classList.toggle('on',b.dataset.v===d.v))},
+ pt:d=>{const r=stars()[+d.i]?.[1];if(r)mod(r.pub?`<b>${esc(r.name)}</b> · ${esc(r.grade)} <span class="chip">${esc(r.value)}</span><p>${esc(r.text)}</p><button data-a="close">إغلاق</button>`:`<p class="done">موقف جميل أضاء سماءنا</p><button data-a="close">إغلاق</button>`)},
+ send:()=>guard(async()=>{const n=$('#fn').value.trim(),g=$('#fg').value.trim(),x=$('#tx').value.trim();if(n.length<2||!g||!cur.v||x.length<5)return alert('اكتبي الاسم والصف واختاري القيمة واكتبي الموقف');
+  const r=await fs.collection('posts').add({name:n,grade:g,value:cur.v,text:x,status:'pending',at:firebase.firestore.FieldValue.serverTimestamp()});
+  const m=JSON.parse(localStorage.mine||'[]');m.push(r.id);localStorage.mine=JSON.stringify(m);mod('<p class="done">وصل موقفكِ إلى معلمتكِ، ونجمتكِ بانتظار الاعتماد</p><button data-a="close">حسنًا</button>');loadMine()}),
+ login:()=>guard(async()=>{await au.signInWithEmailAndPassword($('#em').value,$('#pw').value);S.tab='review';R()}),out:()=>au.signOut().then(()=>{S.tab='board'}),
+ rv:d=>{cur={p:d.p};const p=S.posts[d.p];mod(`<b>${esc(p.name)}</b> · ${esc(p.grade)} <span class="chip">${esc(p.value)}</span><p>${esc(p.text)}</p><label>النص المخصص للنشر<textarea id="pt">${esc(p.text)}</textarea></label><label><input type="checkbox" id="pb" style="width:auto"> نشر التفاصيل في «مواقف تلهمنا»</label><label>ملاحظة للطالبة<input id="nt"></label><div class="row"><button class="g" data-a="ok">اعتماد وإضاءة نجمة</button><button data-a="needs">طلب توضيح</button><button data-a="no">عدم اعتماد</button><button data-a="close">إغلاق</button></div>`)},
+ ok:()=>guard(async()=>{const p=S.posts[cur.p],pub=$('#pb').checked,b=fs.batch();b.set(fs.doc('stars/'+cur.p),{at:Date.now(),pub,name:pub?p.name:'',grade:pub?p.grade:'',value:pub?p.value:'',text:pub?$('#pt').value.trim():''});b.update(fs.doc('posts/'+cur.p),{status:'approved'});await b.commit();cl()}),
+ needs:()=>guard(async()=>{await fs.doc('posts/'+cur.p).update({status:'needs',note:$('#nt').value.trim()||'يرجى توضيح الموقف أكثر'});cl()}),
+ no:()=>guard(async()=>{await fs.doc('posts/'+cur.p).update({status:'rejected',note:$('#nt').value.trim()});cl()}),
+ undo:d=>confirm('التراجع عن الاعتماد؟ ستنقص نجمة ويُزال النشر.')&&guard(async()=>{const b=fs.batch();b.delete(fs.doc('stars/'+d.p));b.update(fs.doc('posts/'+d.p),{status:'pending'});await b.commit()}),
+ hide:d=>guard(()=>fs.doc('stars/'+d.p).update({pub:false,name:'',grade:'',value:'',text:''})),
+ pubit:d=>guard(()=>{const p=S.posts[d.p];return fs.doc('stars/'+d.p).update({pub:true,name:p.name,grade:p.grade,value:p.value,text:p.text})}),
+ saveset:()=>guard(async()=>{const v=$('#sv').value.split(/[،,\n]/).map(x=>x.trim()).filter(Boolean),g=+$('#sg').value;if(g<6||g>300)return alert('الهدف بين ٦ و٣٠٠');await fs.doc('config/main').set({school:$('#sn').value.trim()||DEF.school,goal:g,values:v.length?v:DEF.values});alert('تم الحفظ')})};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b&&A[b.dataset.a])A[b.dataset.a](b.dataset)});
+document.addEventListener('change',e=>{const c=e.target.dataset.c;if(c){S[c]=e.target.value;R()}});
+async function loadMine(){for(const id of JSON.parse(localStorage.mine||'[]')){try{const s=await fs.doc('posts/'+id).get();if(s.exists)S.mine[id]=s.data()}catch(e){}}R()}
+fs.doc('config/main').onSnapshot(s=>{S.cfg={...DEF,...(s.exists?s.data():{})};R()});
+fs.collection('stars').onSnapshot(s=>{S.stars={};s.docs.forEach(d=>S.stars[d.id]=d.data());R()});
+au.onAuthStateChanged(u=>{S.T=!!u;if(u){fs.collection('posts').orderBy('at').onSnapshot(s=>{S.posts={};s.docs.forEach(d=>S.posts[d.id]=d.data());R()},()=>{})}R()});
+if(location.hash==='#teacher')S.tab='login';loadMine();
+</script></body></html>
